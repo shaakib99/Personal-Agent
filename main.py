@@ -1,19 +1,17 @@
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
-from mcp_tools import get_mcp_tools
-from agent import router as agent_router
+from agent_service.router import router as agent_router
+from dotenv import load_dotenv
+
+load_dotenv()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    tools = await get_mcp_tools()
-    print(tools)
     yield
 
 
-origins = [
-    "*",      # React local development port
-]
+origins = ["*"]
 
 app = FastAPI(lifespan=lifespan)
 
@@ -29,5 +27,5 @@ app.add_middleware(
 )
 
 @app.get('/check')
-async def chec():
+async def check():
     return {"status": "SUCCESS"}
