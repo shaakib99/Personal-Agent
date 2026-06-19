@@ -68,7 +68,8 @@ class AgentService:
             }
         }
 
-        context = BaseContext(user_email=USER_EMAIL)
+        context = data.context
+        context.user_email = USER_EMAIL
 
         invokable_model = InvokableModel()
         invokable_model.checkpointer_id = data.checkpointer_id
