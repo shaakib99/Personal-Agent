@@ -14,6 +14,7 @@ router = APIRouter(prefix='/chat', tags=['chat', 'resume'])
 async def chat(data: str = Form(...), files: list[UploadFile] = File(default=[])):
     parsed_data = ChatModel.model_validate_json(data)
     file_content = ''
+    skill_content = ''
     for f in files:
         file_path = await _save_upload(f)
         doc_loader = UnstructuredFileLoader(file_path)
@@ -27,9 +28,17 @@ async def chat(data: str = Form(...), files: list[UploadFile] = File(default=[])
             <note>This file has already been read and its full content is provided above. 
             DO NOT call any file reading tools for this file.</note>
         </uploaded_file>\n'''
+    
+    for skill in parsed_data.skills:
+        skill_content += f'''
+            <skill>
+                <name>{skill.name}</name>
+                <description>{skill.description}</description>
+                <note>This skill has been added by the user. Act accordingly</note>
+            </skill>\n'''
         
 
-    parsed_data.query = file_content + f"User's Query: {parsed_data.query}"
+    parsed_data.query = file_content + skill_content +  f"User's Query: {parsed_data.query}"
     agent_service = await AgentServiceSingleton.get_instance()
     async for chunk in agent_service.chat(parsed_data):
         yield chunk
