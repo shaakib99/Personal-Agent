@@ -7,30 +7,30 @@ from uuid import uuid4
 # from database_service.config import AllowedOps
 from database_service.user_service import UserService
 
-class CreateInterestMetaData(BaseModel):
+class CreateConversationMetaData(BaseModel):
     id: str = Field(None, description='Id of the user, if None, system will set')
     text: str = Field(description='can hold any string data, like complete json text for semantic search. This field does not necessarily has to match the metadata')
-    type: str = Field(None, description='Type of Interest')
+    type: str = Field(None, description='Type of Conversation')
     created_datetime: str = Field(datetime.now().strftime("%d/%m/%Y, %H:%M:%S"), description='datetime record created')
     user_id: str = Field('', description='prefrence of the user. Id will be coming from user collection')
     user_email: str = Field(description='''email of the user. this field is for ai agent''')
 
 
-class UpdateInterestMetaData(BaseModel):
+class UpdateConversationMetaData(BaseModel):
     id: str = Field(description='Id of the user')
-    type: str = Field(None, description='Type of Interest')
+    type: str = Field(None, description='Type of Conversation')
     text: str = Field(description='can hold any string data, like complete json text for semantic search. This field does not necessarily has to match the metadata')
 
 
-class InterestQueryField(BaseModel):
+class ConversationQueryField(BaseModel):
     user_email: str = Field(description='''user_email of the user. type: str''')
     user_id: str = Field(None, description='''user_id of the user. For AI agent no need to populate it''')
-    # type: str =  Field(None, description='Type of Interest')
+    # type: str =  Field(None, description='Type of Conversation')
 
 
-class InterestService:
+class ConversationService:
     def __init__(self):
-        self._collection = 'interest'
+        self._collection = 'conversation'
         self.database_service = DatabaseService(self._collection)
         self.user_service = UserService()
 
@@ -42,7 +42,7 @@ class InterestService:
     
     async def aget(self, data: Dict[str, Any]):
         query = QueryModel.model_validate(data)
-        filter = InterestQueryField.model_validate(query.filter)
+        filter = ConversationQueryField.model_validate(query.filter)
         if filter.user_email is not None:
             user_query_model = QueryModel(text='', filter={'email': filter.user_email}, limit=1)
             user = await self.user_service.aget(user_query_model.model_dump())
@@ -58,7 +58,7 @@ class InterestService:
         return await self.database_service.aget(query)
     
     async def acreate_one(self, metadata: Dict[str, Any]):
-        data = CreateInterestMetaData.model_validate(metadata)
+        data = CreateConversationMetaData.model_validate(metadata)
         if data.user_email:
             user_query_model = QueryModel(text='', filter={'email': data.user_email}, limit=1)
             user = await self.user_service.aget(user_query_model.model_dump())
@@ -76,7 +76,7 @@ class InterestService:
         return await self.aget_one(data.id)
     
     async def aupdate_one(self, metadata: Dict[str, Any]):
-        data = UpdateInterestMetaData.model_validate(metadata)
+        data = UpdateConversationMetaData.model_validate(metadata)
         await self.database_service.aupdate_one(data.id, data.text, data.model_dump(exclude=['text', 'id']))
         return await self.aget_one(data.id)
     
@@ -85,13 +85,13 @@ class InterestService:
     
     async def get_metadata_json(self, op: str):
         if op == 'create':
-            return [{'field_name': field_name, 'field_description': field_info.description} for field_name, field_info in CreateInterestMetaData.model_fields.items()]
+            return [{'field_name': field_name, 'field_description': field_info.description} for field_name, field_info in CreateConversationMetaData.model_fields.items()]
         elif op == 'update':
-            return [{'field_name': field_name, 'field_description': field_info.description} for field_name, field_info in UpdateInterestMetaData.model_fields.items()]
+            return [{'field_name': field_name, 'field_description': field_info.description} for field_name, field_info in UpdateConversationMetaData.model_fields.items()]
         elif op == 'get':
             result = [{'field_name': field_name, 'field_description': field_info.description, 'is_required': field_info.is_required()} for field_name, field_info in QueryModel.model_fields.items()]
             available_filter_options = []
-            for field_name, field_info in InterestQueryField.model_fields.items():
+            for field_name, field_info in ConversationQueryField.model_fields.items():
                 available_filter_options.append({
                         'field_name' : field_name,
                         'description': field_info.description,

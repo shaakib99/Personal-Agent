@@ -25,7 +25,7 @@ class UpdatePreferenceMetaData(BaseModel):
 class PreferenceQueryField(BaseModel):
     user_email: str = Field(description='''user_email of the user. type: str''')
     user_id: str = Field(None, description='''user_id of the user. For AI agent no need to populate it''')
-    type: str =  Field(None, description='Type of preference')
+    # type: str =  Field(None, description='Type of preference')
 
 
 class PreferenceService:
@@ -64,6 +64,12 @@ class PreferenceService:
             user = await self.user_service.aget(user_query_model.model_dump())
             if user is None or len(user.get('ids')) == 0: return f'Passed user id does not exist'
             data.user_id = user.get('ids')[0][0]
+        
+        # ✅ semantic duplicate check using the text
+        existing_query = QueryModel(text=data.text, filter={'user_id': data.user_id}, limit=1)
+        existing = await self.database_service.aget(existing_query)
+        if existing and len(existing.get('ids', [[]])[0]) > 0:
+            return f'Similar preference already exists: {existing.get("documents")[0][0]}. No need to try again, update the record instead. Skipping insert.'
         data.id = str(uuid4())
         await self.database_service.acreate_one(data.text, data.model_dump(exclude=['text']))
         return await self.aget_one(data.id)

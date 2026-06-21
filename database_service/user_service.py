@@ -49,6 +49,11 @@ class UserService:
     async def acreate_one(self, metadata: Dict[str, Any]):
         data = CreateUserMetaData.model_validate(metadata)
         data.id = hashlib.sha256(data.email.encode()).hexdigest()
+        # ✅ semantic duplicate check using the text
+        existing_query = QueryModel(text=data.text, filter={'id': data.id}, limit=1)
+        existing = await self.database_service.aget(existing_query)
+        if existing and len(existing.get('ids', [[]])[0]) > 0:
+            return f'Similar user already exists: {existing.get("documents")[0][0]}. No need to try again, update the record instead. Skipping insert.'
         await self.database_service.acreate_one(data.text, data.model_dump(exclude=['text']))
         return await self.aget_one(data.id)
     
