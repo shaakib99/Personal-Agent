@@ -11,7 +11,7 @@ from pydantic import BaseModel
 from langgraph.types import Command
 from fastapi import HTTPException
 from langchain.tools import BaseTool
-from local_tools.database_tools import delete_user_data, get_user_data, upsert_user_data
+from database_service.tools.database_tool import get_basic_information_of_current_user, get_metadata_json, get_records, create_new_record, update_one_record, delete_one_record
 from mcp_tools import get_mcp_tools
 from typing import AsyncGenerator
 import os
@@ -26,14 +26,14 @@ class AgentService:
             api_key=os.getenv('FREELLM_APIKEY')
         )
         self.checkpointer = checkpointer or InMemorySaver()
-        self.tools: list[BaseTool] = [get_user_data, upsert_user_data, delete_user_data]
         self.agent: CompiledStateGraph | None = None
     
     @classmethod
     async def create(cls, *args, **kwargs):
         instance = cls(*args, **kwargs)
         mcp_tools = await get_mcp_tools()
-        available_tools = [*mcp_tools, get_user_data, upsert_user_data, delete_user_data]
+        local_tools = [get_basic_information_of_current_user, get_metadata_json, get_records, create_new_record, update_one_record, delete_one_record]
+        available_tools = [*mcp_tools, *local_tools]
 
         instance.agent = create_agent(
             model=instance.model,
@@ -100,6 +100,7 @@ class AgentService:
             yield chunk
 
     async def _invoke_stream(self, data: InvokableModel, config: dict, context: BaseModel = None) -> AsyncGenerator[str, str]:
+        config['recursion_limit'] = 80
         if data.decision is None:
             message = HumanMessage(content=data.query)
             events = self.agent.astream_events({'messages': [message]}, version='v2', config=config, context=context)

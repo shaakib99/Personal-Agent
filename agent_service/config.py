@@ -23,4 +23,4 @@ SYSTEM_PROMPT = """
 
 MODEL_BASE_URL='http://localhost:3001/v1'
 MODEL_NAME='automatic'
-USER_EMAIL = 'wsakib@test.com'
+USER_EMAIL = 'wsakib87@gmail.com'
