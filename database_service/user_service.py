@@ -5,6 +5,7 @@ from datetime import datetime
 from .models import QueryModel
 from typing import Dict, Any
 import hashlib
+from uuid import uuid4
 
 
 class CreateUserMetaData(BaseModel):
@@ -48,7 +49,7 @@ class UserService:
     
     async def acreate_one(self, metadata: Dict[str, Any]):
         data = CreateUserMetaData.model_validate(metadata)
-        data.id = hashlib.sha256(data.email.encode()).hexdigest()
+        data.id = str(uuid4())
         # ✅ semantic duplicate check using the text
         existing_query = QueryModel(text=data.text, filter={'id': data.id}, limit=1)
         existing = await self.database_service.aget(existing_query)

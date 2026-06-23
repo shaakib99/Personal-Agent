@@ -13,6 +13,7 @@ from fastapi import HTTPException
 from langchain.tools import BaseTool
 from database_service.tools.database_tool import get_basic_information_of_current_user, get_metadata_json, get_records, create_new_record, update_one_record, delete_one_record
 from mcp_tools import get_mcp_tools
+from .tools.load_skill import load_skill
 from typing import AsyncGenerator
 import os
 import json
@@ -32,9 +33,8 @@ class AgentService:
     async def create(cls, *args, **kwargs):
         instance = cls(*args, **kwargs)
         mcp_tools = await get_mcp_tools()
-        local_tools = [get_basic_information_of_current_user, get_metadata_json, get_records, create_new_record, update_one_record, delete_one_record]
+        local_tools = [load_skill, get_basic_information_of_current_user, get_metadata_json, get_records, create_new_record, update_one_record, delete_one_record]
         available_tools = [*mcp_tools, *local_tools]
-
         instance.agent = create_agent(
             model=instance.model,
             system_prompt=SYSTEM_PROMPT,
